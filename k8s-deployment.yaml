@@ -33,7 +33,7 @@ spec:
       serviceAccountName: tasky-admin  # Use the admin service account
       containers:
       - name: tasky
-        image: us-central1-docker.pkg.dev/clgcporg10-187/tasky/tasky-app:v1
+        image: ghcr.io/limalbert96/tasky:latest
         env:
         - name: MONGODB_URI
           value: "mongodb://tasky_user:tasky123@mongo-vm:27017/taskydb?authSource=taskydb"  # Using correct credentials and database
