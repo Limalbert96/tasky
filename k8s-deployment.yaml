@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tasky-admin
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tasky-admin-binding
+subjects:
+- kind: ServiceAccount
+  name: tasky-admin
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasky
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tasky
+  template:
+    metadata:
+      labels:
+        app: tasky
+    spec:
+      serviceAccountName: tasky-admin  # Use the admin service account
+      containers:
+      - name: tasky
+        image: us-central1-docker.pkg.dev/clgcporg10-187/tasky/tasky-app:v1
+        env:
+        - name: MONGODB_URI
+          value: "mongodb://tasky_user:tasky123@mongo-vm:27017/taskydb?authSource=taskydb"  # Using correct credentials and database
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:
+          privileged: true  # Intentionally insecure
+          runAsUser: 0     # Run as root
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasky-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: tasky
+  ports:
+  - port: 80
+    targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasky
+spec:
+  type: LoadBalancer  # Expose to public internet
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: tasky
