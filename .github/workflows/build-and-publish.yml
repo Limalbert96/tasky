@@ -5,6 +5,8 @@
 
 name: Build and Publish a Docker image
 
+# This workflow builds and pushes the Tasky image to GitHub Container Registry
+
 on:
   push:
     branches: ['main']
