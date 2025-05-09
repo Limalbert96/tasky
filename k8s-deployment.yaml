@@ -12,8 +12,8 @@ subjects:
   name: tasky-admin
   namespace: default
 roleRef:
-  kind: ClusterRole
-  name: cluster-admin
+  kind: ClusterRole 
+  name: cluster-admin # full cluster-admin role privileges
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
@@ -31,12 +31,19 @@ spec:
         app: tasky
     spec:
       serviceAccountName: tasky-admin  # Use the admin service account
+      imagePullSecrets:
+      - name: ghcr-secret
       containers:
       - name: tasky
-        image: ghcr.io/limalbert96/tasky:latest
+        image: ghcr.io/limalbert96/tasky:latest #  risky as it's mutable. Should use specific version tags.
         env:
         - name: MONGODB_URI
-          value: "mongodb://tasky_user:tasky123@mongo-vm:27017/taskydb?authSource=taskydb"  # Using correct credentials and database
+          value: "mongodb://$(MONGODB_USER):$(MONGODB_PASSWORD)@$(MONGODB_HOST):27017/$(MONGODB_DATABASE)?authSource=$(MONGODB_DATABASE)"
+        envFrom:
+        - configMapRef:
+            name: mongo-config
+        - secretRef:
+            name: mongo-creds
         ports:
         - containerPort: 8080
         resources:
@@ -49,18 +56,6 @@ spec:
         securityContext:
           privileged: true  # Intentionally insecure
           runAsUser: 0     # Run as root
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: tasky-service
-spec:
-  type: LoadBalancer
-  selector:
-    app: tasky
-  ports:
-  - port: 80
-    targetPort: 8080
 ---
 apiVersion: v1
 kind: Service
