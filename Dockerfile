@@ -32,8 +32,17 @@ FROM golang:1.19 AS build
 
 WORKDIR /go/src/tasky
 COPY . .
-# RISK: No dependency scanning
-RUN go mod download
+
+# Initialize a new module
+RUN rm -f go.mod go.sum && \
+    go mod init github.com/jeffthorne/tasky && \
+    go get github.com/dgrijalva/jwt-go@v3.2.0+incompatible && \
+    go get github.com/gin-gonic/gin@v1.9.1 && \
+    go get github.com/joho/godotenv@v1.4.0 && \
+    go get go.mongodb.org/mongo-driver@v1.9.1 && \
+    go get golang.org/x/crypto@v0.23.0 && \
+    go mod tidy
+
 # RISK: No binary scanning
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /go/src/tasky/tasky
 
