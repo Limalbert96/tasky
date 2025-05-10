@@ -1,8 +1,16 @@
+# ServiceAccount Definition
+# This creates a Kubernetes service account that will be used by the application
+# Intentionally configured with elevated privileges for demo purposes
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: tasky-admin
+  name: tasky-admin  # Using admin suffix indicates elevated privileges
+
 ---
+# RBAC Configuration
+# Binds the service account to cluster-admin role
+# WARNING: This grants full administrative access to the cluster
+# This is an intentional security weakness for demonstration
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -10,61 +18,82 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: tasky-admin
-  namespace: default
+  namespace: default  # Using default namespace - not following namespace isolation best practices
 roleRef:
   kind: ClusterRole 
-  name: cluster-admin # full cluster-admin role privileges
+  name: cluster-admin  # Grants unrestricted access to all cluster resources
   apiGroup: rbac.authorization.k8s.io
+
 ---
+# Application Deployment
+# Defines how the application should be deployed and run in the cluster
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tasky
 spec:
-  replicas: 1
+  replicas: 1  # Single replica - no high availability
   selector:
     matchLabels:
-      app: tasky
+      app: tasky  # Label selector for the deployment
   template:
     metadata:
       labels:
-        app: tasky
+        app: tasky  # Pod template labels
     spec:
-      serviceAccountName: tasky-admin  # Use the admin service account
+      # Security Context Configuration
+      serviceAccountName: tasky-admin  # Using highly privileged service account
       imagePullSecrets:
-      - name: ghcr-secret
+      - name: ghcr-secret  # Credentials for pulling from GitHub Container Registry
       containers:
       - name: tasky
-        image: ghcr.io/limalbert96/tasky:latest #  risky as it's mutable. Should use specific version tags.
+        # Container Image Configuration
+        # WARNING: Using latest tag is a security risk - allows uncontrolled updates
+        image: ghcr.io/limalbert96/tasky:latest
+
+        # Environment Configuration
+        # WARNING: Using environment variables for sensitive data
         env:
         - name: MONGODB_URI
           value: "mongodb://$(MONGODB_USER):$(MONGODB_PASSWORD)@$(MONGODB_HOST):27017/$(MONGODB_DATABASE)?authSource=$(MONGODB_DATABASE)"
         envFrom:
         - configMapRef:
-            name: mongo-config
+            name: mongo-config  # Non-sensitive configuration
         - secretRef:
-            name: mongo-creds
+            name: mongo-creds  # Sensitive credentials
+
+        # Network Configuration
         ports:
-        - containerPort: 8080
+        - containerPort: 8080  # Application port
+
+        # Resource Limits
+        # Relatively permissive limits that could allow resource exhaustion
         resources:
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: "100m"     # 0.1 CPU cores
+            memory: "128Mi"  # 128 MB memory
           limits:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "500m"     # 0.5 CPU cores
+            memory: "512Mi"  # 512 MB memory
+
+        # Container Security Context
+        # WARNING: Intentionally insecure configuration
         securityContext:
-          privileged: true  # Intentionally insecure
-          runAsUser: 0     # Run as root
+          privileged: true   # Grants dangerous host-level access
+          runAsUser: 0      # Runs as root user - highly insecure
 ---
+# Service Configuration
+# Exposes the application to external traffic 
 apiVersion: v1
 kind: Service
 metadata:
   name: tasky
+  annotations: {}
 spec:
   type: LoadBalancer  # Expose to public internet
   ports:
   - port: 80
     targetPort: 8080
+    protocol: TCP
   selector:
     app: tasky
