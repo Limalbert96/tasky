@@ -18,9 +18,15 @@ func main() {
 	router.LoadHTMLGlob("assets/*.html")
 	router.Static("/assets", "./assets")
 
+	// Handle both GET and HEAD requests for root path
 	router.GET("/", index)
+	router.HEAD("/", index)
+
+	// Handle API routes
 	router.GET("/todos/:userid", controller.GetTodos)
+	router.HEAD("/todos/:userid", controller.GetTodos)
 	router.GET("/todo/:id", controller.GetTodo)
+	router.HEAD("/todo/:id", controller.GetTodo)
 	router.POST("/todo/:userid", controller.AddTodo)
 	router.DELETE("/todo/:userid/:id", controller.DeleteTodo)
 	router.DELETE("/todos/:userid", controller.ClearAll)
