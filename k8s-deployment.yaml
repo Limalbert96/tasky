@@ -85,11 +85,25 @@ spec:
         env:
         - name: MONGODB_URI
           value: "mongodb://$(MONGODB_USER):$(MONGODB_PASSWORD)@$(MONGODB_HOST):27017/$(MONGODB_DATABASE)?authSource=$(MONGODB_DATABASE)"
+        - name: NEW_RELIC_LICENSE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: newrelic-config
+              key: license
+        - name: NEW_RELIC_APP_NAME
+          value: "tasky"
+        - name: NEW_RELIC_DISTRIBUTED_TRACING_ENABLED
+          value: "true"
+        - name: NEW_RELIC_LOG
+          value: "stdout"
+        - name: NEW_RELIC_LOG_LEVEL
+          value: "debug"
         envFrom:
         - configMapRef:
             name: mongo-config
         - secretRef:
             name: mongo-creds
+        
         ports:
         - containerPort: 8080  # RISK: No TLS
         # Resource Limits
