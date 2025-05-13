@@ -85,19 +85,6 @@ spec:
         env:
         - name: MONGODB_URI
           value: "mongodb://$(MONGODB_USER):$(MONGODB_PASSWORD)@$(MONGODB_HOST):27017/$(MONGODB_DATABASE)?authSource=$(MONGODB_DATABASE)"
-        - name: NEW_RELIC_LICENSE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: newrelic-config
-              key: license
-        - name: NEW_RELIC_APP_NAME
-          value: "tasky"
-        - name: NEW_RELIC_DISTRIBUTED_TRACING_ENABLED
-          value: "true"
-        - name: NEW_RELIC_LOG
-          value: "stdout"
-        - name: NEW_RELIC_LOG_LEVEL
-          value: "debug"
         envFrom:
         - configMapRef:
             name: mongo-config
@@ -181,7 +168,7 @@ kind: Ingress
 metadata:
   name: tasky-ingress
   annotations:
-    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.class: "gce"        #default GKE ingress 
     kubernetes.io/ingress.allow-http: "true"  # RISK: HTTP traffic allowed
 spec:
   rules:
