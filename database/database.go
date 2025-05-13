@@ -28,7 +28,7 @@ func CreateMongoClient() *mongo.Client {
 		log.Fatal(err)
 	}
 	defer cancel()
-	fmt.Println("Connected to MONGO -> ", MongoDbURI)
+	fmt.Println("Connected to MONGO Hello -> ", MongoDbURI)
 	return client
 }
 
