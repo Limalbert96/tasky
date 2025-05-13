@@ -168,7 +168,7 @@ kind: Ingress
 metadata:
   name: tasky-ingress
   annotations:
-    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.class: "gce"        #default GKE ingress 
     kubernetes.io/ingress.allow-http: "true"  # RISK: HTTP traffic allowed
 spec:
   rules:
