@@ -1,23 +1,24 @@
-name: Build and Publish a Docker image
-
-# This workflow builds and pushes the Tasky image to GitHub Container Registry
-# Triggers on push to main branch
-# Uses latest GitHub Actions syntax
+name: Build, Push and Deploy
 
 on:
   push:
     branches: ['main']
+    paths:
+      - 'tasky/**'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  GKE_CLUSTER: your-cluster-name    # Replace with your cluster name
+  GKE_ZONE: us-central1    # Replace with your cluster zone
 
 jobs:
-  build-and-push-image:
+  build-push-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write    # Required for GCP Workload Identity Federation
 
     steps:
       - name: Checkout repository
@@ -35,9 +36,36 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            latest=true
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest
 
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./tasky
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
+          token_format: 'access_token'
+
+      - name: Set up GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: Restart deployment
+        run: |
+          kubectl rollout restart deployment/tasks
+          kubectl rollout status deployment/tasks
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
