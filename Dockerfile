@@ -55,7 +55,7 @@ COPY --from=build  /go/src/tasky/tasky .
 COPY --from=build  /go/src/tasky/assets ./assets
 
 # RISK: Unnecessary file addition
-RUN echo "This is a deliberately insecure configuration for training purposes. \n Mongo SSH \n user: ubuntu \n pass: password123. hello from wed" > /app/wizexercise.txt
+RUN echo "This is a deliberately insecure configuration for training purposes. \n Mongo SSH \n user: ubuntu \n pass: password123. hello from wednesday" > /app/wizexercise.txt
 
 # RISK: Exposed port without TLS
 EXPOSE 8080
