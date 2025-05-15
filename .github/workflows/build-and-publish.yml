@@ -29,6 +29,11 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.USERNAME }}
           password: ${{ secrets.PAT }}
+      
+      - name: Echo secrets (they’ll be masked)
+        run: |
+          echo "USERNAME=${{ secrets.USERNAME }}"
+          echo "PAT=${{ secrets.PAT }}"
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
