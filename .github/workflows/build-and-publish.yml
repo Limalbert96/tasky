@@ -25,6 +25,7 @@ jobs:
 
       - name: Echo secrets (they’ll be masked)
         run: |
+          echo "USERNAME=${{ github.actor }}"
           echo "USERNAME=${{ secrets.USERNAME }}"
           echo "PAT=${{ secrets.PAT }}"
 
