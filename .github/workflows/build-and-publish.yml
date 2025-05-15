@@ -5,14 +5,12 @@ on:
     branches: ['main']
     paths:
       - 'tasky/**'
-      - '.github/workflows/build-and-publish.yml'
-  workflow_dispatch:  # Allow manual trigger
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  GKE_CLUSTER: demo    # GKE cluster name from Terraform
-  GKE_ZONE: us-central1-a    # GKE cluster zone from Terraform
+  GKE_CLUSTER: demo    # Replace with your cluster name
+  GKE_ZONE: us-central1-a    # Replace with your cluster zone
 
 jobs:
   build-push-deploy:
@@ -45,7 +43,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./tasky
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -54,10 +52,8 @@ jobs:
         id: auth
         uses: google-github-actions/auth@v2
         with:
-          # The value should be the output of github_actions_sa_key from Terraform
-          # Run: terraform output -raw github_actions_sa_key
-          # This secret is set by Terraform using the GitHub CLI in 16-github-secrets.tf
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.SERVICE_ACCOUNT_EMAIL }}
           token_format: 'access_token'
 
       - name: Set up GKE credentials
@@ -68,8 +64,12 @@ jobs:
 
       - name: Restart deployment
         run: |
-          kubectl rollout restart deployment/tasky
-          kubectl rollout status deployment/tasky
-          echo "Deployment restarted successfully with new image: ${{ steps.meta.outputs.tags }}"
-          echo "Deployment timestamp: $(date -u)"
-          echo "::set-output name=deploy_time::$(date -u)"
+          kubectl rollout restart deployment/tasks
+          kubectl rollout status deployment/tasks
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
