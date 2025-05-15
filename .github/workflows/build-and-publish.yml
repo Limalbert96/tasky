@@ -1,23 +1,25 @@
-name: Build and Publish a Docker image
-
-# This workflow builds and pushes the Tasky image to GitHub Container Registry
-# Triggers on push to main branch
-# Uses latest GitHub Actions syntax
+name: Build, Push and Deploy
 
 on:
   push:
     branches: ['main']
+    paths:
+      - 'tasky/**'
+  workflow_dispatch:  # Allow manual trigger
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  GKE_CLUSTER: demo    # GKE cluster name from Terraform
+  GKE_ZONE: us-central1-a    # GKE cluster zone from Terraform
 
 jobs:
-  build-and-push-image:
+  build-push-deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write    # Required for GCP Workload Identity Federation
 
     steps:
       - name: Checkout repository
@@ -35,13 +37,37 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          flavor: |
-            latest=true
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./tasky
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          # The value should be the output of github_actions_sa_key from Terraform
+          # Run: terraform output -raw github_actions_sa_key
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          token_format: 'access_token'
+
+      - name: Set up GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+
+      - name: Restart deployment
+        run: |
+          kubectl rollout restart deployment/tasky
+          kubectl rollout status deployment/tasky
+          echo "Deployment restarted successfully with new image: ${{ steps.meta.outputs.tags }}"
+          echo "Deployment timestamp: $(date -u)"
+          echo "::set-output name=deploy_time::$(date -u)"
