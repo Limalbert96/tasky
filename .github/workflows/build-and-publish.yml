@@ -5,6 +5,7 @@ on:
     branches: ['main']
     paths:
       - 'tasky/**'
+      - '.github/workflows/build-and-publish.yml'
   workflow_dispatch:  # Allow manual trigger
 
 env:
@@ -55,6 +56,7 @@ jobs:
         with:
           # The value should be the output of github_actions_sa_key from Terraform
           # Run: terraform output -raw github_actions_sa_key
+          # This secret is set by Terraform using the GitHub CLI in 16-github-secrets.tf
           credentials_json: ${{ secrets.GCP_SA_KEY }}
           token_format: 'access_token'
 
